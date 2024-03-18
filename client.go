@@ -286,11 +286,18 @@ func (c *Client) GetTaskExitstatus(taskUpid int) (exitStatus string, err error) 
         url := fmt.Sprintf("/vm/v3/task?where=consul_id+EQ+%v", taskUpid)
         var data map[string]interface{}
         _, err = c.session.GetJSON(url, nil, nil, &data)
-        if err == nil {
-		tasks := data["list"].([]interface{})
-		task := tasks[0].(map[string]interface{})
-                exitStatus = task["status"].(string)
+        if err != nil {
+		return nil, err
         }
+	
+	tasks := data["list"].([]interface{})
+	if len(tasks)) == 0 { // Non administrator don't see deletion task result
+		exitStatus = exitStatusSuccess
+		return
+	}
+	task := tasks[0].(map[string]interface{})
+	exitStatus = task["status"].(string)
+	
         if exitStatus != exitStatusSuccess {
                 err = fmt.Errorf(exitStatus)
         }
